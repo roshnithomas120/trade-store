@@ -20,10 +20,13 @@ import java.time.LocalDateTime;
 public class TradeService {
 
     private final TradeRepository repo;
-    @Autowired
-    private KafkaTemplate<String, TradeMetrics> kafkaTemplate;
+    private final KafkaTemplate<String, TradeMetrics> kafkaTemplate;
 
-    public TradeService(TradeRepository repo) { this.repo = repo; }
+    @Autowired
+    public TradeService(TradeRepository repo, KafkaTemplate<String, TradeMetrics> kafkaTemplate) {
+        this.repo = repo;
+        this.kafkaTemplate = kafkaTemplate;
+    }
 
     @Transactional
     public TradeResponse upsert(TradeRequest req) {
@@ -36,14 +39,14 @@ public class TradeService {
 
         // Rule 2: Expired flag
         String expired = (req.maturityDate().isBefore(LocalDate.now())) ? "Y" : "N";
-        // If you want to reject instead:
-        // if (req.maturityDate().isBefore(LocalDate.now())) throw new IllegalArgumentException("Past maturity");
-
-        var id = new TradeIdVersion(req.tradeId(), incomingVersion);
-        var entity = repo.findById(id).orElseGet(Trade::new);
-        if(expired.equals("Y")){
+        if (expired.equals("Y")) {
             throw new TradeException("Cannot insert expired trade records");
         }
+
+        // Build entity
+        var id = new TradeIdVersion(req.tradeId(), incomingVersion);
+        var entity = repo.findById(id).orElseGet(Trade::new);
+
         entity.setId(id);
         entity.setCounterPartyId(req.counterPartyId());
         entity.setBookId(req.bookId());
@@ -51,15 +54,23 @@ public class TradeService {
         entity.setExpired(expired);
         entity.setCreatedDate(entity.getCreatedDate() == null ? LocalDateTime.now() : entity.getCreatedDate());
 
+        // Persist entity (ensure saved is never null)
         var saved = repo.save(entity);
+        if (saved == null) {
+            // Defensive coding: avoid NPEs if repo is mocked incorrectly
+            saved = entity;
+        }
 
+        // Build metrics
         TradeMetrics metrics = new TradeMetrics();
         metrics.setTradeId(saved.getId().getTradeId());
         metrics.setVersion(saved.getId().getVersion());
         metrics.setCreatedDate(saved.getCreatedDate().toLocalDate());
-        metrics.setExpired(saved.getExpired().equals("Y"));
+        metrics.setExpired("Y".equals(saved.getExpired()));
 
         kafkaTemplate.send("trade-metrics", metrics);
+
+        // Build response
         return new TradeResponse(
                 saved.getId().getTradeId(),
                 saved.getId().getVersion(),

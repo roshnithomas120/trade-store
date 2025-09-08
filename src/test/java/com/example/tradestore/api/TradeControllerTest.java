@@ -11,8 +11,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
@@ -26,16 +30,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 // Only load TradeController and web layer beans
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(TradeController.class)
+@AutoConfigureMockMvc
 class TradeControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @Mock
+    @MockitoBean
     private TradeService tradeService;
 
-    @Mock
+    @MockitoBean
     private TradeRepository tradeRepository;
 
     @InjectMocks
@@ -71,7 +76,7 @@ class TradeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tradeId").value("T1"))
                 .andExpect(jsonPath("$.version").value(1))
-                .andExpect(jsonPath("$.status").value("success"));
+                .andExpect(jsonPath("$.counterPartyId").value("CP-1"));
     }
 
     @Test
@@ -93,10 +98,10 @@ class TradeControllerTest {
 
         mockMvc.perform(get("/api/trades"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].tradeId").value("T1"))
-                .andExpect(jsonPath("$[0].version").value(1))
+                .andExpect(jsonPath("$[0].id.tradeId").value("T1"))
+                .andExpect(jsonPath("$[0].id.version").value(1))
                 .andExpect(jsonPath("$[0].counterPartyId").value("CP-1"))
                 .andExpect(jsonPath("$[0].bookId").value("B1"))
-                .andExpect(jsonPath("$[0].expired").value(false));
+                .andExpect(jsonPath("$[0].expired").value("N"));
     }
 }

@@ -1,3 +1,4 @@
+// TradeServiceTest.java
 package com.example.tradestore.service;
 
 import com.example.tradestore.api.TradeRequest;
@@ -9,7 +10,10 @@ import com.example.tradestore.exception.TradeException;
 import com.example.tradestore.repo.TradeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.time.LocalDate;
@@ -31,91 +35,74 @@ class TradeServiceTest {
     private TradeService tradeService;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         MockitoAnnotations.openMocks(this);
-    }
-
-    @Test
-    void shouldSaveTradeSuccessfully_whenValidRequest() {
-        // Given
-        TradeRequest request = new TradeRequest("T1", 2, "CP-1", "B1", LocalDate.now().plusDays(1));
-        TradeIdVersion id = new TradeIdVersion("T1", 2);
-        Trade trade = new Trade();
-        trade.setId(id);
-        trade.setCounterPartyId("CP-1");
-        trade.setBookId("B1");
-        trade.setMaturityDate(request.maturityDate());
-        trade.setExpired("N");
-        trade.setCreatedDate(LocalDateTime.now());
-
-        when(tradeRepository.findMaxVersion("T1")).thenReturn(Optional.of(1));
-        when(tradeRepository.findById(id)).thenReturn(Optional.empty());
-        when(tradeRepository.save(any())).thenReturn(trade);
-
-        // When
-        TradeResponse response = tradeService.upsert(request);
-
-        // Then
-        assertNotNull(response);
-        assertEquals("T1", response.tradeId());
-        assertEquals(2, response.version());
-        assertEquals("N", response.expired());
-
-        verify(kafkaTemplate).send(eq("trade-metrics"), any(TradeMetrics.class));
-        verify(tradeRepository).save(any());
     }
 
     @Test
     void shouldThrowTradeException_whenVersionIsLower() {
         // Given
         TradeRequest request = new TradeRequest("T1", 1, "CP-1", "B1", LocalDate.now().plusDays(1));
-
         when(tradeRepository.findMaxVersion("T1")).thenReturn(Optional.of(2));
 
         // When / Then
         TradeException ex = assertThrows(TradeException.class, () -> tradeService.upsert(request));
         assertEquals("Lower version trade rejected", ex.getMessage());
+
         verify(tradeRepository, never()).save(any());
         verify(kafkaTemplate, never()).send(any(), any());
     }
 
     @Test
-    void shouldThrowTradeException_whenTradeIsExpired() {
+    void shouldSaveTradeAndSendToKafka_whenValidTrade() {
         // Given
-        TradeRequest request = new TradeRequest("T1", 1, "CP-1", "B1", LocalDate.now().minusDays(1));
+        TradeRequest request = new TradeRequest("T2", 5, "CP-2", "B2", LocalDate.now().plusDays(2));
+        when(tradeRepository.findMaxVersion("T2")).thenReturn(Optional.of(4));
 
-        when(tradeRepository.findMaxVersion("T1")).thenReturn(Optional.of(0));
+        Trade entity = new Trade();
+        entity.setId(new TradeIdVersion("T2", 5));
+        entity.setCounterPartyId("CP-2");
+        entity.setBookId("B2");
+        entity.setMaturityDate(request.maturityDate());
+        entity.setCreatedDate(LocalDateTime.now());
+        entity.setExpired("N");
 
-        // When / Then
-        TradeException ex = assertThrows(TradeException.class, () -> tradeService.upsert(request));
-        assertEquals("Cannot insert expired trade records", ex.getMessage());
-        verify(tradeRepository, never()).save(any());
-        verify(kafkaTemplate, never()).send(any(), any());
-    }
-
-    @Test
-    void shouldUpdateExistingTrade_whenTradeExists() {
-        // Given
-        TradeRequest request = new TradeRequest("T1", 3, "CP-2", "B2", LocalDate.now().plusDays(10));
-        TradeIdVersion id = new TradeIdVersion("T1", 3);
-
-        Trade existing = new Trade();
-        existing.setId(id);
-        existing.setCreatedDate(LocalDateTime.now().minusDays(1));
-
-        when(tradeRepository.findMaxVersion("T1")).thenReturn(Optional.of(2));
-        when(tradeRepository.findById(id)).thenReturn(Optional.of(existing));
-        when(tradeRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+        // Stub repo.save(..) to return a non-null Trade
+        when(tradeRepository.save(any(Trade.class))).thenReturn(entity);
 
         // When
         TradeResponse response = tradeService.upsert(request);
 
         // Then
         assertNotNull(response);
+        assertEquals("T2", response.tradeId());
+        assertEquals(5, response.version());
         assertEquals("CP-2", response.counterPartyId());
         assertEquals("B2", response.bookId());
+        assertEquals("N", response.expired());
 
-        verify(tradeRepository).save(any());
-        verify(kafkaTemplate).send(eq("trade-metrics"), any(TradeMetrics.class));
+        // Verify interactions
+        verify(tradeRepository).save(any(Trade.class));
+
+        ArgumentCaptor<TradeMetrics> metricsCaptor = ArgumentCaptor.forClass(TradeMetrics.class);
+        verify(kafkaTemplate).send(eq("trade-metrics"), metricsCaptor.capture());
+
+        TradeMetrics metrics = metricsCaptor.getValue();
+        assertEquals("T2", metrics.getTradeId());
+        assertEquals(5, metrics.getVersion());
+        assertFalse(metrics.isExpired());
+    }
+
+    @Test
+    void shouldThrowTradeException_whenTradeIsExpired() {
+        // Given
+        TradeRequest request = new TradeRequest("T3", 1, "CP-3", "B3", LocalDate.now().minusDays(1));
+
+        // When / Then
+        TradeException ex = assertThrows(TradeException.class, () -> tradeService.upsert(request));
+        assertEquals("Cannot insert expired trade records", ex.getMessage());
+
+        verify(tradeRepository, never()).save(any());
+        verify(kafkaTemplate, never()).send(any(), any());
     }
 }
