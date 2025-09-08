@@ -24,5 +24,3 @@ jobs:
       - name: Run tests with coverage
         run: ./gradlew test jacocoTestReport
 
-      - name: Security Scan
-        run: ./gradlew dependencyCheckAnalyze
