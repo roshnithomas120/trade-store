@@ -1,8 +1,8 @@
 // TradeRepository.java
 package com.example.tradestore.repo;
 
-import com.example.tradestore.domain.Trade;
-import com.example.tradestore.domain.TradeIdVersion;
+import com.example.tradestore.dto.Trade;
+import com.example.tradestore.dto.TradeIdVersion;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 

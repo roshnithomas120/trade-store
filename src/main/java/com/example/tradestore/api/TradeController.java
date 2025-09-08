@@ -1,7 +1,7 @@
 // TradeController.java
 package com.example.tradestore.api;
 
-import com.example.tradestore.domain.Trade;
+import com.example.tradestore.dto.Trade;
 import com.example.tradestore.service.TradeService;
 import com.example.tradestore.repo.TradeRepository;
 import org.springframework.data.domain.Sort;

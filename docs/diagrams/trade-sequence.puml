@@ -1,0 +1,15 @@
+@startuml
+actor Client
+participant Controller
+participant Service
+participant SQLDB as "H2 Database"
+participant NoSQLDB as "MongoDB"
+participant Kafka
+
+Client -> Controller: Submit Trade
+Controller -> Service: validateTrade()
+Service -> SQLDB: save trade
+Service -> NoSQLDB: store trade metadata
+Service -> Kafka: publish trade event
+Controller -> Client: Success Response
+@enduml

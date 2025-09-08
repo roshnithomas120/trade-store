@@ -3,10 +3,13 @@ package com.example.tradestore.service;
 
 import com.example.tradestore.api.TradeRequest;
 import com.example.tradestore.api.TradeResponse;
-import com.example.tradestore.domain.Trade;
-import com.example.tradestore.domain.TradeIdVersion;
+import com.example.tradestore.dto.Trade;
+import com.example.tradestore.dto.TradeIdVersion;
+import com.example.tradestore.dto.TradeMetrics;
 import com.example.tradestore.exception.TradeException;
 import com.example.tradestore.repo.TradeRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +20,8 @@ import java.time.LocalDateTime;
 public class TradeService {
 
     private final TradeRepository repo;
+    @Autowired
+    private KafkaTemplate<String, TradeMetrics> kafkaTemplate;
 
     public TradeService(TradeRepository repo) { this.repo = repo; }
 
@@ -47,6 +52,14 @@ public class TradeService {
         entity.setCreatedDate(entity.getCreatedDate() == null ? LocalDateTime.now() : entity.getCreatedDate());
 
         var saved = repo.save(entity);
+
+        TradeMetrics metrics = new TradeMetrics();
+        metrics.setTradeId(saved.getId().getTradeId());
+        metrics.setVersion(saved.getId().getVersion());
+        metrics.setCreatedDate(saved.getCreatedDate().toLocalDate());
+        metrics.setExpired(saved.getExpired().equals("Y"));
+
+        kafkaTemplate.send("trade-metrics", metrics);
         return new TradeResponse(
                 saved.getId().getTradeId(),
                 saved.getId().getVersion(),

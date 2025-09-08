@@ -1,4 +1,4 @@
-package com.example.tradestore.domain;
+package com.example.tradestore.dto;
 
 import jakarta.persistence.*;
 import lombok.Getter;

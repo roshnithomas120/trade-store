@@ -1,11 +1,15 @@
-package com.example.tradestore.domain;
+package com.example.tradestore.dto;
 
 import java.io.Serializable;
 import java.util.Objects;
 import jakarta.persistence.Embeddable;
+import lombok.Getter;
+import lombok.Setter;
 
 
 @Embeddable
+@Setter
+@Getter
 public class TradeIdVersion implements Serializable {
     private String tradeId;
     private int version;
