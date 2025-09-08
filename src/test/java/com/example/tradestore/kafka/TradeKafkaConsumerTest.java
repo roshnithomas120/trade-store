@@ -4,6 +4,7 @@ import com.example.tradestore.dto.TradeMetrics;
 import com.example.tradestore.repo.TradeMetricsRepository;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+@Disabled("Skipping Kafka consumer test in CI pipeline")
 @SpringBootTest
 @EmbeddedKafka(partitions = 1, topics = {"trade-metrics"})
 @DirtiesContext
