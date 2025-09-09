@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -21,11 +21,17 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew clean build
 
-      - name: Run tests with coverage
-        run: ./gradlew test jacocoTestReport
+      - name: Build and run tests
+        run: ./gradlew clean test jacocoTestReport
 
-      - name: Upload JaCoCo report
-        uses: actions/upload-artifact@v3
+      - name: Upload JaCoCo HTML report
+        uses: actions/upload-artifact@v4
         with:
-          name: jacoco-report
+          name: jacoco-html-report
           path: build/reports/jacoco/test/html
+
+      - name: Upload JaCoCo XML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-xml-report
+          path: build/reports/jacoco/test/jacocoTestReport.xml
