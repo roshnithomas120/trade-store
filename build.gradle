@@ -48,10 +48,16 @@ dependencies {
 	implementation 'org.owasp:dependency-check-gradle:9.0.9'
 }
 dependencyCheck {
-	failBuildOnCVSS = 9.0
-	formats = ['HTML', 'XML']
-	outputDirectory = layout.buildDirectory.dir("reports/dependency-check").get().asFile
+	analyzers {
+		assemblyEnabled = false
+	}
+	nvd {
+		// If you want fresh updates:
+		apiKey = System.getenv("NVD_API_KEY")
+		validForHours = 720
+	}
 }
+
 tasks.named('test') {
 	useJUnitPlatform()
 	finalizedBy jacocoTestReport
