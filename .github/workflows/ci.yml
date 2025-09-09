@@ -36,8 +36,14 @@ jobs:
           name: jacoco-xml-report
           path: build/reports/jacoco/test/jacocoTestReport.xml
 
-      - name: Run OWASP Dependency-Check
-        run: ./gradlew dependencyCheckAnalyze --no-daemon
+      - name: Install Snyk
+        run: npm install -g snyk
+
+      - name: Authenticate Snyk
         env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk auth $SNYK_TOKEN
+
+      - name: Test for vulnerabilities
+        run: snyk test --all-projects
 
