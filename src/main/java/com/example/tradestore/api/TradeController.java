@@ -2,8 +2,8 @@
 package com.example.tradestore.api;
 
 import com.example.tradestore.dto.Trade;
-import com.example.tradestore.service.TradeService;
 import com.example.tradestore.repo.TradeRepository;
+import com.example.tradestore.service.TradeService;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 

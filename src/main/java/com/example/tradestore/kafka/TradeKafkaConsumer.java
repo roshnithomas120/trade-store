@@ -1,11 +1,9 @@
 package com.example.tradestore.kafka;
 
-import com.example.tradestore.dto.Trade;
 import com.example.tradestore.dto.TradeMetrics;
 import com.example.tradestore.repo.TradeMetricsRepository;
-import com.example.tradestore.service.TradeService;
-import org.springframework.stereotype.Service;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.stereotype.Service;
 
 @Service
 public class TradeKafkaConsumer {

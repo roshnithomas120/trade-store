@@ -48,6 +48,23 @@ dependencies {
 	implementation 'org.owasp:dependency-check-gradle:9.0.9'
 }
 
+dependencyCheck {
+	// Optional: Set NVD API key in CI secrets and inject via env or gradle.properties
+	// nvdApiKey = project.hasProperty('NVD_API_KEY') ? project.property('NVD_API_KEY') : null
+
+	// Fail the build when a vulnerability equal to or above this CVSS score exists.
+	// CVSS >= 9.0 typically matches "Critical"
+	failBuildOnCVSS = 9.0
+
+	// Report formats
+	formats = ['HTML','XML','JSON']
+
+	// Cache NVD data for 24h
+	cveValidForHours = 24
+
+	// Don't fail the build if the scanner itself fails (optional)
+	failBuildOnError = false
+}
 tasks.named('test') {
 	useJUnitPlatform()
 	finalizedBy jacocoTestReport

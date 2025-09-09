@@ -1,7 +1,5 @@
 package com.example.tradestore.api;
 
-import lombok.AllArgsConstructor;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
