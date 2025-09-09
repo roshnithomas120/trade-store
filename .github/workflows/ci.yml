@@ -37,10 +37,4 @@ jobs:
           path: build/reports/jacoco/test/jacocoTestReport.xml
 
       - name: Run OWASP Dependency-Check
-        uses: dependency-check/Dependency-Check_Action@main
-        with:
-          project: "TradeStore"
-          path: "."
-          format: "HTML"
-          out: "reports"
-          failBuildOnCVSS: "9"
+        run: ./gradlew dependencyCheckAnalyze
