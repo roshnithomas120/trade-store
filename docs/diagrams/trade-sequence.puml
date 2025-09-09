@@ -9,7 +9,7 @@ participant Kafka
 Client -> Controller: Submit Trade
 Controller -> Service: validateTrade()
 Service -> SQLDB: save trade
-Service -> NoSQLDB: store trade metadata
 Service -> Kafka: publish trade event
+Service -> NoSQLDB: store trade metadata
 Controller -> Client: Success Response
 @enduml
